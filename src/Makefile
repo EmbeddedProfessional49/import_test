@@ -1,7 +1,7 @@
-CROSS_COMPILE=
+CROSS_COMPILE=arm-linux-gnueabi-
 
 CC=$(CROSS_COMPILE)gcc
-CFLAGS=-c -g -rdynamic -funwind-tables -Wall -I./
+CFLAGS=-c -g -rdynamic -funwind-tables -Wall -I../inlcude/
 LDFLAGS=  -lpthread -lrt
 
 STRIP=$(CROSS_COMPILE)strip
@@ -15,6 +15,7 @@ TARGET=access_system
 all: $(SOURCES) $(TARGET)
 
 $(TARGET): $(OBJECTS)
+
 	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 # 	$(STRIP) $(TARGET)
 .c.o:
