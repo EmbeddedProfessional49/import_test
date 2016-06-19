@@ -19,13 +19,13 @@
 
 typedef struct rfid_module_ops RFID_MODULE_OPS;
 
-typedef u32 (*RFID_INIT) (RFID_MODULE_OPS *module);
+typedef u32 (*RFID_INIT) (void);
 
 struct rfid_module_ops {
     RFID_INIT init;
 };
 
-u32 Init_RFID_Card (RFID_MODULE_OPS *module_ops, u32 module_num);
+u32 Get_RFID_Card (RFID_MODULE_OPS *module_ops, u32 module_num);
 
 
 

@@ -6,7 +6,7 @@ LDFLAGS=  -lpthread -lrt
 
 STRIP=$(CROSS_COMPILE)strip
 
-SOURCES= main.c rfid_card.c
+SOURCES= main.c rfid_card.c Card1.c
 
 OBJECTS=$(SOURCES:.c=.o)
 

@@ -15,9 +15,9 @@ int main (void) {
 
     RFID_MODULE_OPS *card_1;
 
-    Init_RFID_Card (card_1, 0);
+    Get_RFID_Card (card_1, 0);
 
-
+    card_1->init ();
 
 
 
