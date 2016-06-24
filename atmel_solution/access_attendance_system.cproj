@@ -20,10 +20,10 @@
     <OverrideVtor>false</OverrideVtor>
     <CacheFlash>true</CacheFlash>
     <ProgFlashFromRam>true</ProgFlashFromRam>
-    <RamSnippetAddress />
+    <RamSnippetAddress>0x20000000</RamSnippetAddress>
     <UncachedRange />
     <preserveEEPROM>true</preserveEEPROM>
-    <OverrideVtorValue />
+    <OverrideVtorValue>exception_table</OverrideVtorValue>
     <BootSegment>2</BootSegment>
     <eraseonlaunchrule>0</eraseonlaunchrule>
     <AsfFrameworkConfig>
@@ -336,8 +336,8 @@
       <Value>../src/ASF/sam0/utils</Value>
       <Value>../src/ASF/thirdparty/CMSIS/Include</Value>
       <Value>../src/ASF/common2/boards/user_board</Value>
-      <Value>../../src/inlcude</Value>
-      <Value>../../src</Value>
+      <Value>../src/card_modules/include</Value>
+      <Value>../src/inlcude</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize (-O1)</armgcc.compiler.optimization.level>
@@ -469,17 +469,40 @@
     <Folder Include="src\config\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\asf.h">
+    <Compile Include="src\card_modules\CardModule1.c">
       <SubType>compile</SubType>
-    </None>
-    <Compile Include="..\src\Card1.c">
-      <SubType>compile</SubType>
-      <Link>src\Card1.c</Link>
+      <Link>src\CardModule1.c</Link>
     </Compile>
-    <Compile Include="..\src\rfid_card.c">
+    <Compile Include="src\card_modules\include\CardModule1.h">
+      <SubType>compile</SubType>
+      <Link>src\CardModule1.h</Link>
+    </Compile>
+    <Compile Include="src\card_modules\include\rfid_card.h">
+      <SubType>compile</SubType>
+      <Link>src\rfid_card.h</Link>
+    </Compile>
+    <Compile Include="src\card_modules\include\rfid_card_pvt.h">
+      <SubType>compile</SubType>
+      <Link>src\rfid_card_pvt.h</Link>
+    </Compile>
+    <Compile Include="src\card_modules\rfid_card.c">
       <SubType>compile</SubType>
       <Link>src\rfid_card.c</Link>
     </Compile>
+    <Compile Include="src\inlcude\datatypes.h">
+      <SubType>compile</SubType>
+      <Link>src\datatypes.h</Link>
+    </Compile>
+    <Compile Include="src\inlcude\system_cfg.h">
+      <SubType>compile</SubType>
+      <Link>src\system_cfg.h</Link>
+    </Compile>
+    <Compile Include="src\main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\asf.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\ASF\common2\boards\user_board\init.c">
       <SubType>compile</SubType>
     </Compile>
@@ -865,9 +888,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\sam0\utils\syscalls\gcc\syscalls.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\main.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

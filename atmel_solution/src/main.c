@@ -30,15 +30,18 @@
 #include <asf.h>
 #include <rfid_card.h>
 
+
 int main (void)
 {
 	system_init();
+    
+    RFID_MODULE_API *card_1;
 
-    RFID_MODULE_OPS *card_1;
-
+    Load_RFID_Modules();
+    
     Get_RFID_Card (card_1, 0);
 
-    card_1->init ();
+    card_1->init (card_1);
 
 	/* Insert application code here, after the board has been initialized. */
 }
