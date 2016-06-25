@@ -8,6 +8,9 @@ static RFID_MODULE Card_1 = {
     },
     .ops = {
         .init = CardModule1_init,
+        .enable = NULL,
+        .disable = NULL,
+        .uid = NULL,
     }
 };
 
@@ -19,7 +22,7 @@ u32 CardModule1_init (void) {
     return 0;
 }
 
-RFID_MODULE_OPS * Get_CardModule1_Ops (void) {
+RFID_MODULE_OPS* Get_CardModule1_Ops (void) {
 
     return &Card_1.ops;
 }
