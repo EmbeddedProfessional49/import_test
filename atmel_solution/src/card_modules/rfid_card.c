@@ -1,7 +1,7 @@
 #include <rfid_card.h>
-#include <CardModule1.h>
+#include <sl025x.h>
 
-static u32 rfid_init (RFID_MODULE_API *module) {
+static RFID_STATUS rfid_init (RFID_MODULE_API *module) {
     
     if (module->module_ops->init != 0x00) {
         module->module_ops->init ();
@@ -14,7 +14,7 @@ static RFID_MODULE_API CardModule1_api = {
     .init = rfid_init,
 };
 
-u32 Get_RFID_Card (RFID_MODULE_API *module, u32 module_num) {
+RFID_STATUS Get_RFID_Card (RFID_MODULE_API *module, u32 module_num) {
 
     switch (module_num) {
 
@@ -32,6 +32,6 @@ u32 Get_RFID_Card (RFID_MODULE_API *module, u32 module_num) {
 }
 
 void Load_RFID_Modules (void) {
-    CardModule1_api.module_ops = Get_CardModule1_Ops();
+    CardModule1_api.module_ops = Get_Sl025x_Ops ();
 }
 

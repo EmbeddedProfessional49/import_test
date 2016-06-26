@@ -542,14 +542,6 @@
     <None Include="src\ASF\sam0\drivers\sercom\usart\usart_interrupt.h">
       <SubType>compile</SubType>
     </None>
-    <Compile Include="src\card_modules\CardModule1.c">
-      <SubType>compile</SubType>
-      <Link>src\CardModule1.c</Link>
-    </Compile>
-    <Compile Include="src\card_modules\include\CardModule1.h">
-      <SubType>compile</SubType>
-      <Link>src\CardModule1.h</Link>
-    </Compile>
     <Compile Include="src\card_modules\include\rfid_card.h">
       <SubType>compile</SubType>
       <Link>src\rfid_card.h</Link>
@@ -558,9 +550,17 @@
       <SubType>compile</SubType>
       <Link>src\rfid_card_pvt.h</Link>
     </Compile>
+    <Compile Include="src\card_modules\include\sl025x.h">
+      <SubType>compile</SubType>
+      <Link>src\sl025x.h</Link>
+    </Compile>
     <Compile Include="src\card_modules\rfid_card.c">
       <SubType>compile</SubType>
       <Link>src\rfid_card.c</Link>
+    </Compile>
+    <Compile Include="src\card_modules\sl025x.c">
+      <SubType>compile</SubType>
+      <Link>src\sl025x.c</Link>
     </Compile>
     <Compile Include="src\inlcude\datatypes.h">
       <SubType>compile</SubType>

@@ -21,14 +21,15 @@ typedef struct rfid_module_ops RFID_MODULE_OPS;
 typedef struct rfid_module_api RFID_MODULE_API;
 typedef struct rfid_read_data RFID_READ_DATA;
 typedef struct rfid_write_data RFID_WRITE_DATA;
+typedef enum rfid_status RFID_STATUS;
 
-typedef u32 (*RFID_INIT) (void);
-typedef u32 (*RFID_ENABLE) (void);
-typedef u32 (*RFID_DISABLE) (void);
-typedef u32 (*RFID_UID) (u8 *uid_data);
-typedef u32 (*RFID_READ) (RFID_READ_DATA *read_data);
-typedef u32 (*RFID_WRITE) (RFID_WRITE_DATA *write_data);
-typedef u32 (*VIRTUAL_INIT) (RFID_MODULE_API *module);
+typedef RFID_STATUS (*RFID_INIT) (void);
+typedef RFID_STATUS (*RFID_ENABLE) (void);
+typedef RFID_STATUS (*RFID_DISABLE) (void);
+typedef RFID_STATUS (*RFID_UID) (u8 *uid_data);
+typedef RFID_STATUS (*RFID_READ) (RFID_READ_DATA *read_data);
+typedef RFID_STATUS (*RFID_WRITE) (RFID_WRITE_DATA *write_data);
+typedef RFID_STATUS (*VIRTUAL_INIT) (RFID_MODULE_API *module);
 
 struct rfid_module_ops {
     RFID_INIT init;
@@ -58,7 +59,24 @@ struct rfid_write_data {
     u8 data_size;
 };
 
-u32 Get_RFID_Card (RFID_MODULE_API *module, u32 module_num);
+enum rfid_status {
+    RFID_OPERATION_SUCCEED,
+    RFID_NO_TAG,
+    RFID_LOGIN_SUCCEED,
+    RFID_LOGIN_FAIL,
+    RFID_READ_FAIL,
+    RFID_WRITE_FAIL,
+    RFID_UNABLE_READ_AFTER_WRITE,
+    RFID_ADDRESS_OVERFLOW,
+    RFID_DOWNLOAD_KEY_FAIL,
+    RFID_NOT_AUTHENTICATE,
+    RFID_NOT_VALUE_BLOCK,
+    RFID_INVALID_LEN_OF_COMMAND_FORMAT,
+    RFID_CHECKSUM_ERROR,
+    RFID_COMMAND_CODE_ERROR,
+};
+
+RFID_STATUS Get_RFID_Card (RFID_MODULE_API *module, u32 module_num);
 void Load_RFID_Modules (void);
 
 
