@@ -3,9 +3,11 @@
 #include <string.h>
 #include <timer_utilities.h>
 
+
 #define SEND_PREAMBLE 0xBA
 #define RECV_PREAMBLE 0xBD
 #define MAX_RCV_CMD 0x05
+
 
 static RFID_STATUS sl025x_init (void);
 static RFID_STATUS sl025x_uid (RFID_UID_DATA *uid_data);
@@ -81,15 +83,14 @@ static void clear_received_cmd (void) {
     received_cmd.put_pointer = 0x00;    
 }
 
+/* End of buffer related operations */
+
 static RFID_STATUS send_cmd (SL025X_SEND_CMD *cmd) {
     
     // using command len fieled we send data to uart
     
     return RFID_OPERATION_SUCCEED;
 }    
-
-/* End of buffer related operations */
-
 
 static RFID_MODULE Card_1 = {
     .cfg.uart_cfg = {
@@ -217,9 +218,19 @@ static RFID_STATUS sl025x_login_to_sector (LOGIN_SECTOR_DETAILS *login_details) 
 }
 
 static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data) {
-    RFID_STATUS ret_val = 0x00;
+    RFID_STATUS ret_value = RFID_OPERATION_SUCCEED;
+    SL025X_RCV_CMD *rcv_cmd = NULL;
+    SL025X_SEND_CMD cmd = {{0}};;
+    LOGIN_SECTOR_DETAILS login_sector = {0};
+    u8 key [] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     u8 sector_no = 0x00;
     
+    cmd.read_data_block.preamble = SEND_PREAMBLE;
+    cmd.read_data_block.len = 0x03;
+    cmd.read_data_block.cmd = READ_DATA_BLOCK;
+    cmd.read_data_block.block = read_data ->block_number;
+    cmd.read_data_block.chksum = xor_checksum ((u8 *) &cmd.read_data_block);
+        
     if(read_data ->block_number < 0x80) {
         sector_no = (read_data ->block_number / 0x04);
     }
@@ -227,6 +238,39 @@ static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data) {
         sector_no = (read_data ->block_number / 0x10);
         sector_no = sector_no + 0x18;
     }
-    return ret_val;
+    
+    login_sector.key = key;
+    login_sector.key_type = 0xAA; 
+    login_sector.sector = sector_no;
+    
+    ret_value = sl025x_login_to_sector (&login_sector);
+    
+    if (ret_value != RFID_LOGIN_SUCCEED) {
+        return ret_value;
+    }
+        
+    clear_received_cmd ();
+    
+    ret_value = send_cmd (&cmd);
+    
+    // delay
+    time_delay_ms (5);
+    
+    // get response from card module
+    ret_value = get_received_cmd (rcv_cmd);
+    if (ret_value != RFID_VALID_CMD_FORMAT) {
+        return ret_value;
+    }
+    
+    if (rcv_cmd ->read_data_block.cmd != READ_DATA_BLOCK) {
+        return RFID_UNEXPECTED_CMD_ERROR;
+    }
+    if (rcv_cmd ->read_data_block.status != RFID_OPERATION_SUCCEED) {
+        return rcv_cmd ->read_data_block.status;
+    }
+    
+    memcpy (read_data ->data, rcv_cmd ->read_data_block.data, sizeof (rcv_cmd ->read_data_block.data));
+    
+    return ret_value;
 }    
 
