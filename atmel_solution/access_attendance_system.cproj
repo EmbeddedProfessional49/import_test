@@ -506,6 +506,14 @@
     <Compile Include="src\ASF\sam0\drivers\sercom\sercom.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\inlcude\timer_utilities.h">
+      <SubType>compile</SubType>
+      <Link>src\timer_utilities.h</Link>
+    </Compile>
+    <Compile Include="src\timer_utilities.c">
+      <SubType>compile</SubType>
+      <Link>src\timer_utilities.c</Link>
+    </Compile>
     <None Include="src\ASF\sam0\drivers\sercom\sercom.h">
       <SubType>compile</SubType>
     </None>

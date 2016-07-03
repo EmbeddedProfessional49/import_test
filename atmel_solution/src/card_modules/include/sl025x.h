@@ -27,6 +27,13 @@ enum sl025x_cmd {
     SL025X_MAX_CMD,
 };
 
+typedef struct login_sector_details {
+    u8 sector;
+    u8 key_type;
+    u8 *key;
+}LOGIN_SECTOR_DETAILS;
+
+
 union sl025X_send_cmd {
     struct {
         u8 preamble;

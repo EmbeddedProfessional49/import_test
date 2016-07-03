@@ -60,7 +60,7 @@ struct rfid_write_data {
 };
 
 enum rfid_status {
-    RFID_OPERATION_SUCCEED,
+    RFID_OPERATION_SUCCEED = 0x00,
     RFID_NO_TAG,
     RFID_LOGIN_SUCCEED,
     RFID_LOGIN_FAIL,
