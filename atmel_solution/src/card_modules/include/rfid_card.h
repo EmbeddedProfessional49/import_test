@@ -22,13 +22,15 @@ typedef struct rfid_module_api RFID_MODULE_API;
 typedef struct rfid_read_data RFID_READ_DATA;
 typedef struct rfid_write_data RFID_WRITE_DATA;
 typedef enum rfid_status RFID_STATUS;
+typedef struct rfid_uid_data RFID_UID_DATA;
 
 typedef RFID_STATUS (*RFID_INIT) (void);
 typedef RFID_STATUS (*RFID_ENABLE) (void);
 typedef RFID_STATUS (*RFID_DISABLE) (void);
-typedef RFID_STATUS (*RFID_UID) (u8 *uid_data);
+typedef RFID_STATUS (*RFID_UID) (RFID_UID_DATA *uid_data);
 typedef RFID_STATUS (*RFID_READ) (RFID_READ_DATA *read_data);
 typedef RFID_STATUS (*RFID_WRITE) (RFID_WRITE_DATA *write_data);
+
 typedef RFID_STATUS (*VIRTUAL_INIT) (RFID_MODULE_API *module);
 
 struct rfid_module_ops {
@@ -38,6 +40,7 @@ struct rfid_module_ops {
     RFID_UID uid;
     RFID_READ read;
     RFID_WRITE write;
+    void * pvt_data;
 };
 
 struct rfid_module_api {
@@ -59,7 +62,14 @@ struct rfid_write_data {
     u8 data_size;
 };
 
+struct rfid_uid_data {
+    u8 *uid;
+    u8 type;
+    u8 uid_size;
+};
+
 enum rfid_status {
+    /* SL025 error numbers*/
     RFID_OPERATION_SUCCEED = 0x00,
     RFID_NO_TAG,
     RFID_LOGIN_SUCCEED,
@@ -74,6 +84,11 @@ enum rfid_status {
     RFID_INVALID_LEN_OF_COMMAND_FORMAT,
     RFID_CHECKSUM_ERROR,
     RFID_COMMAND_CODE_ERROR,
+    /* Don't change above order */    
+    RFID_UNEXPECTED_CMD_ERROR,
+    RFID_CMD_NOT_RCVED,
+    RFID_VALID_CMD_FORMAT,
+    
 };
 
 RFID_STATUS Get_RFID_Card (RFID_MODULE_API *module, u32 module_num);

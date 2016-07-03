@@ -3,12 +3,31 @@
 #include <string.h>
 #include <timer_utilities.h>
 
-#define PREAMBLE_BYTE 0xBA
+#define SEND_PREAMBLE 0xBA
+#define RECV_PREAMBLE 0xBD
 #define MAX_RCV_CMD 0x05
 
 static RFID_STATUS sl025x_init (void);
-static RFID_STATUS sl025x_uid (u8 *buffer);
+static RFID_STATUS sl025x_uid (RFID_UID_DATA *uid_data);
+static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data);
 static u8 xor_checksum (u8 *command_packet);
+
+
+static RFID_STATUS verify_rcv_cmd (SL025X_RCV_CMD *rcv_cmd) {
+    
+    u8 chck_sum_cmd = 0x00;
+    
+    chck_sum_cmd = ((u8 *) rcv_cmd) [rcv_cmd ->select_mifare_card.len + 1];
+    
+    if (rcv_cmd ->select_mifare_card.cmd >= SL025X_MAX_CMD) {
+        return RFID_COMMAND_CODE_ERROR;
+    }
+    else if (chck_sum_cmd != (xor_checksum ((u8 *) &rcv_cmd ->select_mifare_card))) {
+        return RFID_CHECKSUM_ERROR; 
+    }
+    
+    return RFID_VALID_CMD_FORMAT;    
+}
 
 /* Buffer related operations */
 static struct {
@@ -17,21 +36,25 @@ static struct {
     u8 get_pointer;
 }received_cmd;
 
-static SL025X_RCV_CMD *get_received_cmd (void) {
+static RFID_STATUS get_received_cmd (SL025X_RCV_CMD *cmd) {
     
     if (received_cmd.put_pointer == received_cmd.get_pointer) {
-        return NULL;
+        return RFID_CMD_NOT_RCVED;
     }
     else {
         u8 temp_position = 0x00;
+        RFID_STATUS ret_value = 0x00;
         
         temp_position = received_cmd.get_pointer;
         received_cmd.get_pointer ++;
         if (received_cmd.get_pointer >= MAX_RCV_CMD) {
             received_cmd.get_pointer = 0x00;
         }       
-        
-        return &received_cmd.cmd_buffer [temp_position];
+        ret_value = verify_rcv_cmd (&received_cmd.cmd_buffer [temp_position]);
+        if (ret_value == RFID_VALID_CMD_FORMAT) {
+            cmd = &received_cmd.cmd_buffer [temp_position];
+        }
+        return ret_value;
     }
 }
 
@@ -48,7 +71,7 @@ static void put_received_cmd (SL025X_RCV_CMD *rcv_cmd) {
         if (received_cmd.get_pointer >= MAX_RCV_CMD) {
             received_cmd.get_pointer = 0x00;
         }
-    }   
+    }
 }
 
 static void clear_received_cmd (void) {
@@ -78,7 +101,7 @@ static RFID_MODULE Card_1 = {
         .enable = NULL,
         .disable = NULL,
         .uid = sl025x_uid,
-        .read = NULL,
+        .read = sl025x_read_data,
         .write = NULL,
     }
 };
@@ -111,13 +134,14 @@ static RFID_STATUS sl025x_init (void) {
     return 0;
 }
 
-static RFID_STATUS sl025x_uid (u8 *usr_buffer) {
+static RFID_STATUS sl025x_uid (RFID_UID_DATA *uid_data) {
     
     RFID_STATUS ret_value = RFID_LOGIN_SUCCEED;
-    SL025X_RCV_CMD *rcv_cmd;
-    SL025X_SEND_CMD snd_cmd;
+    SL025X_RCV_CMD *rcv_cmd = NULL;
+    SL025X_SEND_CMD snd_cmd = {{0}};
+    u8 counter = 0x00;
     
-    snd_cmd.select_mifare_card.preamble = PREAMBLE_BYTE;
+    snd_cmd.select_mifare_card.preamble = SEND_PREAMBLE;
     snd_cmd.select_mifare_card.len = 0x02;
     snd_cmd.select_mifare_card.cmd = SELECT_MIFARE_CARD;
     snd_cmd.select_mifare_card.chksum = xor_checksum ((u8 *) &snd_cmd.select_mifare_card);
@@ -135,11 +159,25 @@ static RFID_STATUS sl025x_uid (u8 *usr_buffer) {
     time_delay_ms (5);
     
     // get response from card module
-    rcv_cmd = get_received_cmd ();
-    
-    if (rcv_cmd->select_mifare_card.cmd != SELECT_MIFARE_CARD) {
-        return RFID_COMMAND_CODE_ERROR;
+    ret_value = get_received_cmd (rcv_cmd);
+    if (ret_value != RFID_VALID_CMD_FORMAT) {
+        return ret_value;
     }
+
+    if (rcv_cmd ->select_mifare_card.cmd != SELECT_MIFARE_CARD) {
+        return RFID_UNEXPECTED_CMD_ERROR;
+    }
+
+    if (rcv_cmd ->select_mifare_card.status != RFID_OPERATION_SUCCEED) {
+        return ret_value;
+    }
+    
+    uid_data ->uid_size =  (rcv_cmd ->select_mifare_card.len - 4);
+    
+    for (counter = 0x00; counter < uid_data ->uid_size; counter ++) {
+        uid_data ->uid [counter] = ((u8 *) &rcv_cmd ->select_mifare_card.uid) [counter];
+    }
+    uid_data ->type = ((u8 *) &rcv_cmd ->select_mifare_card.uid) [counter];
     
     return ret_value;
 }
@@ -147,10 +185,10 @@ static RFID_STATUS sl025x_uid (u8 *usr_buffer) {
 static RFID_STATUS sl025x_login_to_sector (LOGIN_SECTOR_DETAILS *login_details) {
     
     RFID_STATUS ret_value = RFID_OPERATION_SUCCEED;
-    SL025X_RCV_CMD *rcv_cmd;
-    SL025X_SEND_CMD cmd;
+    SL025X_RCV_CMD *rcv_cmd = NULL;
+    SL025X_SEND_CMD cmd = {{0}};;
     
-    cmd.login_sector.preamble = PREAMBLE_BYTE;
+    cmd.login_sector.preamble = SEND_PREAMBLE;
     cmd.login_sector.len = 0x0A;
     cmd.login_sector.cmd = LOGIN_TO_SECTOR;
     cmd.login_sector.sector = login_details->sector;
@@ -166,14 +204,29 @@ static RFID_STATUS sl025x_login_to_sector (LOGIN_SECTOR_DETAILS *login_details) 
     time_delay_ms (5);
     
     // get response from card module
-    rcv_cmd = get_received_cmd ();
-    
-    if (rcv_cmd->login_sector.cmd != LOGIN_TO_SECTOR) {
-        return RFID_COMMAND_CODE_ERROR;
+    ret_value = get_received_cmd (rcv_cmd);
+    if (ret_value != RFID_VALID_CMD_FORMAT) {
+        return ret_value;
     }
 
-    return ret_value;
+    if (rcv_cmd ->login_sector.cmd != LOGIN_TO_SECTOR) {
+        return RFID_UNEXPECTED_CMD_ERROR;
+    }
+
+    return rcv_cmd ->login_sector.status;
 }
 
-
+static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data) {
+    RFID_STATUS ret_val = 0x00;
+    u8 sector_no = 0x00;
+    
+    if(read_data ->block_number < 0x80) {
+        sector_no = (read_data ->block_number / 0x04);
+    }
+    else if (sector_no >= 0x80) {
+        sector_no = (read_data ->block_number / 0x10);
+        sector_no = sector_no + 0x18;
+    }
+    return ret_val;
+}    
 
