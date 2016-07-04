@@ -1,6 +1,7 @@
 #ifndef __rfid_card_h__
 #define __rfid_card_h__
 
+
 #include <datatypes.h>
 
 /*
@@ -17,6 +18,7 @@
  * terminate card module
  */
 
+typedef struct rfid_module RFID_MODULE;
 typedef struct rfid_module_ops RFID_MODULE_OPS;
 typedef struct rfid_module_api RFID_MODULE_API;
 typedef struct rfid_read_data RFID_READ_DATA;
@@ -24,14 +26,15 @@ typedef struct rfid_write_data RFID_WRITE_DATA;
 typedef enum rfid_status RFID_STATUS;
 typedef struct rfid_uid_data RFID_UID_DATA;
 
-typedef RFID_STATUS (*RFID_INIT) (void);
-typedef RFID_STATUS (*RFID_ENABLE) (void);
-typedef RFID_STATUS (*RFID_DISABLE) (void);
-typedef RFID_STATUS (*RFID_UID) (RFID_UID_DATA *uid_data);
-typedef RFID_STATUS (*RFID_READ) (RFID_READ_DATA *read_data);
-typedef RFID_STATUS (*RFID_WRITE) (RFID_WRITE_DATA *write_data);
+typedef RFID_STATUS (*RFID_INIT) (RFID_MODULE *pthis);
+typedef RFID_STATUS (*RFID_ENABLE) (RFID_MODULE *pthis);
+typedef RFID_STATUS (*RFID_DISABLE) (RFID_MODULE *pthis);
+typedef RFID_STATUS (*RFID_UID) (RFID_MODULE *pthis, RFID_UID_DATA *uid_data);
+typedef RFID_STATUS (*RFID_READ) (RFID_MODULE *pthis, RFID_READ_DATA *read_data);
+typedef RFID_STATUS (*RFID_WRITE) (RFID_MODULE *pthis, RFID_WRITE_DATA *write_data);
 
-typedef RFID_STATUS (*VIRTUAL_INIT) (RFID_MODULE_API *module);
+typedef RFID_STATUS (*VIRTUAL_INIT) (RFID_MODULE_API *pthis);
+
 
 struct rfid_module_ops {
     RFID_INIT init;
@@ -40,7 +43,7 @@ struct rfid_module_ops {
     RFID_UID uid;
     RFID_READ read;
     RFID_WRITE write;
-    void * pvt_data;
+    void *pthis;
 };
 
 struct rfid_module_api {
@@ -68,6 +71,7 @@ struct rfid_uid_data {
     u8 uid_size;
 };
 
+
 enum rfid_status {
     /* SL025 error numbers*/
     RFID_OPERATION_SUCCEED = 0x00,
@@ -90,6 +94,7 @@ enum rfid_status {
     RFID_VALID_CMD_FORMAT,
     
 };
+
 
 RFID_STATUS Get_RFID_Card (RFID_MODULE_API *module, u32 module_num);
 void Load_RFID_Modules (void);

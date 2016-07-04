@@ -3,6 +3,12 @@
 
 #include <rfid_card.h>
 
+
+#define SEND_PREAMBLE 0xBA
+#define RECV_PREAMBLE 0xBD
+#define MAX_RCV_CMD 0x05
+
+
 typedef enum sl025x_cmd SL025X_CMD;
 typedef union sl025X_send_cmd SL025X_SEND_CMD;
 typedef union sl025X_rcv_cmd SL025X_RCV_CMD;
