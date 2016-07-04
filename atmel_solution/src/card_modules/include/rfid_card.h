@@ -26,12 +26,12 @@ typedef struct rfid_write_data RFID_WRITE_DATA;
 typedef enum rfid_status RFID_STATUS;
 typedef struct rfid_uid_data RFID_UID_DATA;
 
-typedef RFID_STATUS (*RFID_INIT) (RFID_MODULE *pthis);
-typedef RFID_STATUS (*RFID_ENABLE) (RFID_MODULE *pthis);
-typedef RFID_STATUS (*RFID_DISABLE) (RFID_MODULE *pthis);
-typedef RFID_STATUS (*RFID_UID) (RFID_MODULE *pthis, RFID_UID_DATA *uid_data);
-typedef RFID_STATUS (*RFID_READ) (RFID_MODULE *pthis, RFID_READ_DATA *read_data);
-typedef RFID_STATUS (*RFID_WRITE) (RFID_MODULE *pthis, RFID_WRITE_DATA *write_data);
+typedef RFID_STATUS (*RFID_INIT) (void);
+typedef RFID_STATUS (*RFID_ENABLE) (void);
+typedef RFID_STATUS (*RFID_DISABLE) (void);
+typedef RFID_STATUS (*RFID_UID) (RFID_UID_DATA *uid_data);
+typedef RFID_STATUS (*RFID_READ) (RFID_READ_DATA *read_data);
+typedef RFID_STATUS (*RFID_WRITE) (RFID_WRITE_DATA *write_data);
 
 typedef RFID_STATUS (*VIRTUAL_INIT) (RFID_MODULE_API *pthis);
 
@@ -44,6 +44,7 @@ struct rfid_module_ops {
     RFID_READ read;
     RFID_WRITE write;
     void *pthis;
+    void *current_module;
 };
 
 struct rfid_module_api {
@@ -70,7 +71,6 @@ struct rfid_uid_data {
     u8 type;
     u8 uid_size;
 };
-
 
 enum rfid_status {
     /* SL025 error numbers*/

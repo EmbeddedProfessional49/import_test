@@ -10,11 +10,12 @@ typedef union rfid_module_cfg RFID_MODULE_CFG;
 typedef struct rfid_module RFID_MODULE;
 typedef struct cmd_handling CMD_HANDLING;
 
-typedef RFID_STATUS (*GET_CMD) (RFID_MODULE *pthis, void *user_buffer);
-typedef void (*PUT_CMD) (RFID_MODULE *pthis, void *cmd);
-typedef void (*CLEAR_CMD) (RFID_MODULE *pthis);
+typedef RFID_STATUS (*GET_CMD) (void *user_buffer);
+typedef void (*PUT_CMD) (void *cmd);
+typedef void (*CLEAR_CMD) (void);
 typedef RFID_STATUS (*VERIFY_CMD) (void *cmd);
-typedef RFID_STATUS (*SEND_CMD) (RFID_MODULE *pthis, void *cmd);
+typedef RFID_STATUS (*SEND_CMD) (void *cmd);
+
 
 union rfid_module_cfg {
     struct {

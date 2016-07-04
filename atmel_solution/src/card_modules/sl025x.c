@@ -4,17 +4,75 @@
 #include <timer_utilities.h>
 
 
-static RFID_STATUS sl025x_init (RFID_MODULE *pthis);
-static RFID_STATUS sl025x_uid (RFID_MODULE *pthis, RFID_UID_DATA *uid_data);
-static RFID_STATUS sl025x_read_data (RFID_MODULE *pthis, RFID_READ_DATA *read_data);
+/*pointer to current operating module*/
+static RFID_MODULE *pthis;
+static SL025X_RCV_CMD Card1_rcv_buffer [MAX_RCV_CMD];
+
+
+static RFID_STATUS sl025x_init (void);
+static RFID_STATUS sl025x_uid (RFID_UID_DATA *uid_data);
+static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data);
 
 static u8 xor_checksum (u8 *command_packet);
 static RFID_STATUS verify_rcv_cmd (void *cmd);
+static RFID_STATUS get_received_cmd (void *user_buff);
+static void put_received_cmd (void *cmd);
+static void clear_received_cmd (void);
+static RFID_STATUS send_cmd (void *cmd);
 
-/* Buffer related operations */
-static SL025X_RCV_CMD Card1_rcv_buffer [MAX_RCV_CMD];
 
-static RFID_STATUS get_received_cmd (RFID_MODULE *pthis, void *user_buff) {
+static RFID_MODULE Card_1 = {
+    .hal_cfg.uart_cfg = {
+        .uartnumber = 1,
+        .baudrate = 1152000,
+    },
+    .cmd =  {
+        .put = put_received_cmd,
+        .get = get_received_cmd,
+        .clear = clear_received_cmd,
+        .send = send_cmd,
+        .buffer = (u8 *) Card1_rcv_buffer,
+    },
+    .ops =  {
+        .init = sl025x_init,
+        .uid = sl025x_uid,
+        .read = sl025x_read_data,
+        .pthis = &Card_1,
+        .current_module = &pthis,
+    }
+};
+
+RFID_MODULE_OPS* Get_Sl025x_Ops (void) {
+
+    return &Card_1.ops;
+}
+
+static RFID_STATUS sl025x_init (void) {
+
+    // module init code
+
+    return 0;
+}
+
+static RFID_STATUS verify_rcv_cmd (void *cmd) {
+    
+    SL025X_RCV_CMD *rcv_cmd = (SL025X_RCV_CMD *) cmd;
+    
+    u8 chck_sum_cmd = 0x00;
+    
+    chck_sum_cmd = ((u8 *) rcv_cmd) [rcv_cmd ->select_mifare_card.len + 1];
+    
+    if (rcv_cmd ->select_mifare_card.cmd >= SL025X_MAX_CMD) {
+        return RFID_COMMAND_CODE_ERROR;
+    }
+    else if (chck_sum_cmd != (xor_checksum ((u8 *) &rcv_cmd ->select_mifare_card))) {
+        return RFID_CHECKSUM_ERROR;
+    }
+    
+    return RFID_VALID_CMD_FORMAT;
+}
+
+static RFID_STATUS get_received_cmd (void *user_buff) {
     
     if (pthis ->cmd.put_pointer == pthis ->cmd.get_pointer) {
         return RFID_CMD_NOT_RCVED;
@@ -36,7 +94,7 @@ static RFID_STATUS get_received_cmd (RFID_MODULE *pthis, void *user_buff) {
     }
 }
 
-static void put_received_cmd (RFID_MODULE *pthis, void *cmd) {
+static void put_received_cmd (void *cmd) {
     
     memcpy (&pthis ->cmd.buffer [pthis ->cmd.put_pointer], cmd, sizeof (SL025X_RCV_CMD));
     
@@ -52,67 +110,19 @@ static void put_received_cmd (RFID_MODULE *pthis, void *cmd) {
     }
 }
 
-static void clear_received_cmd (RFID_MODULE *pthis) {
+static void clear_received_cmd (void) {
     
     memset ((u8 *) pthis ->cmd.buffer, 0x00, (sizeof (SL025X_RCV_CMD) * MAX_RCV_CMD));
     pthis ->cmd.get_pointer = 0x00;
     pthis ->cmd.put_pointer = 0x00;    
 }
 
-/* End of buffer related operations */
-
-static RFID_STATUS send_cmd (RFID_MODULE *pthis, void *cmd) {
+static RFID_STATUS send_cmd (void *cmd) {
     
     // using command len we send data to hal
     
     return RFID_OPERATION_SUCCEED;
 }    
-
-static RFID_MODULE Card_1 = {
-    .hal_cfg.uart_cfg = {
-                            .uartnumber = 1,
-                            .baudrate = 1152000,
-                        },
-    .cmd =  {
-                .put = put_received_cmd,
-                .get = get_received_cmd,
-                .clear = clear_received_cmd,
-                .send = send_cmd,
-                .buffer = (u8 *) Card1_rcv_buffer,
-            },
-    .ops =  {
-                .init = sl025x_init,
-                .enable = NULL,
-                .disable = NULL,
-                .uid = sl025x_uid,
-                .read = sl025x_read_data,
-                .write = NULL,
-                .pthis = (void *) &Card_1,
-            }
-};
-
-RFID_MODULE_OPS* Get_Sl025x_Ops (void) {
-
-    return &Card_1.ops;
-}
-
-static RFID_STATUS verify_rcv_cmd (void *cmd) {
-    
-    SL025X_RCV_CMD *rcv_cmd = (SL025X_RCV_CMD *) cmd;
-    
-    u8 chck_sum_cmd = 0x00;
-    
-    chck_sum_cmd = ((u8 *) rcv_cmd) [rcv_cmd ->select_mifare_card.len + 1];
-    
-    if (rcv_cmd ->select_mifare_card.cmd >= SL025X_MAX_CMD) {
-        return RFID_COMMAND_CODE_ERROR;
-    }
-    else if (chck_sum_cmd != (xor_checksum ((u8 *) &rcv_cmd ->select_mifare_card))) {
-        return RFID_CHECKSUM_ERROR;
-    }
-    
-    return RFID_VALID_CMD_FORMAT;
-}
 
 static u8 xor_checksum (u8 *command_packet) {
     
@@ -130,14 +140,7 @@ static u8 xor_checksum (u8 *command_packet) {
     return checksum;
 }
 
-static RFID_STATUS sl025x_init (RFID_MODULE *pthis) {
-
-    // module init code
-
-    return 0;
-}
-
-static RFID_STATUS sl025x_uid (RFID_MODULE *pthis, RFID_UID_DATA *uid_data) {
+static RFID_STATUS sl025x_uid (RFID_UID_DATA *uid_data) {
     
     RFID_STATUS ret_value = RFID_LOGIN_SUCCEED;
     SL025X_RCV_CMD *rcv_cmd = NULL;
@@ -150,10 +153,10 @@ static RFID_STATUS sl025x_uid (RFID_MODULE *pthis, RFID_UID_DATA *uid_data) {
     snd_cmd.select_mifare_card.chksum = xor_checksum ((u8 *) &snd_cmd.select_mifare_card);
     
     // clear buffer
-    clear_received_cmd (pthis);
+    clear_received_cmd ();
     
     // from here send command to sl025x module
-    ret_value = pthis ->cmd.send (pthis, &snd_cmd);
+    ret_value = pthis ->cmd.send (&snd_cmd);
     if (ret_value != RFID_OPERATION_SUCCEED) {
         return ret_value;
     }
@@ -162,7 +165,7 @@ static RFID_STATUS sl025x_uid (RFID_MODULE *pthis, RFID_UID_DATA *uid_data) {
     time_delay_ms (5);
     
     // get response from card module
-    ret_value = pthis ->cmd.get (pthis , rcv_cmd);
+    ret_value = pthis ->cmd.get (rcv_cmd);
     if (ret_value != RFID_VALID_CMD_FORMAT) {
         return ret_value;
     }
@@ -185,7 +188,7 @@ static RFID_STATUS sl025x_uid (RFID_MODULE *pthis, RFID_UID_DATA *uid_data) {
     return ret_value;
 }
 
-static RFID_STATUS sl025x_login_to_sector (RFID_MODULE *pthis, LOGIN_SECTOR_DETAILS *login_details) {
+static RFID_STATUS sl025x_login_to_sector (LOGIN_SECTOR_DETAILS *login_details) {
     
     RFID_STATUS ret_value = RFID_OPERATION_SUCCEED;
     SL025X_RCV_CMD *rcv_cmd = NULL;
@@ -199,15 +202,15 @@ static RFID_STATUS sl025x_login_to_sector (RFID_MODULE *pthis, LOGIN_SECTOR_DETA
     cmd.login_sector.key = login_details->key;
     cmd.login_sector.chksum = xor_checksum ((u8 *) &cmd.login_sector);
     
-    clear_received_cmd (pthis);
+    clear_received_cmd ();
     
-    ret_value = pthis ->cmd.send (pthis, &cmd);
+    ret_value = pthis ->cmd.send (&cmd);
     
     // delay
     time_delay_ms (5);
     
     // get response from card module
-    ret_value = pthis ->cmd.get (pthis, rcv_cmd);
+    ret_value = pthis ->cmd.get (rcv_cmd);
     if (ret_value != RFID_VALID_CMD_FORMAT) {
         return ret_value;
     }
@@ -219,7 +222,7 @@ static RFID_STATUS sl025x_login_to_sector (RFID_MODULE *pthis, LOGIN_SECTOR_DETA
     return rcv_cmd ->login_sector.status;
 }
 
-static RFID_STATUS sl025x_read_data (RFID_MODULE *pthis, RFID_READ_DATA *read_data) {
+static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data) {
     RFID_STATUS ret_value = RFID_OPERATION_SUCCEED;
     SL025X_RCV_CMD *rcv_cmd = NULL;
     SL025X_SEND_CMD cmd = {{0}};;
@@ -245,21 +248,21 @@ static RFID_STATUS sl025x_read_data (RFID_MODULE *pthis, RFID_READ_DATA *read_da
     login_sector.key_type = 0xAA; 
     login_sector.sector = sector_no;
     
-    ret_value = sl025x_login_to_sector (pthis, &login_sector);
+    ret_value = sl025x_login_to_sector (&login_sector);
     
     if (ret_value != RFID_LOGIN_SUCCEED) {
         return ret_value;
     }
         
-    clear_received_cmd (pthis);
+    clear_received_cmd ();
     
-    ret_value = pthis ->cmd.send (pthis, &cmd);
+    ret_value = pthis ->cmd.send (&cmd);
     
     // delay
     time_delay_ms (5);
     
     // get response from card module
-    ret_value = pthis ->cmd.get (pthis, rcv_cmd);
+    ret_value = pthis ->cmd.get (rcv_cmd);
     if (ret_value != RFID_VALID_CMD_FORMAT) {
         return ret_value;
     }

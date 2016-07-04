@@ -1,10 +1,12 @@
 #include <rfid_card.h>
 #include <sl025x.h>
 
+
 static RFID_STATUS rfid_init (RFID_MODULE_API *pthis) {
     
     if (pthis ->module_ops ->init != 0x00) {
-        pthis ->module_ops ->init (pthis ->module_ops ->pthis);
+        pthis ->module_ops ->current_module = pthis ->module_ops ->pthis;
+        pthis ->module_ops ->init ();
     }
     
     return 0;
