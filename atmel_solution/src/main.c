@@ -33,15 +33,16 @@
 
 int main (void)
 {
-	system_init();
+	RFID_MODULE_API *card_1;
+    RFID_UID_DATA read_uid = {0};
+        
+    system_init ();    
     
-    RFID_MODULE_API *card_1;
-
-    Load_RFID_Modules();
-    
+    Load_RFID_Modules ();
     Get_RFID_Card (card_1, 0);
 
-    card_1->init (card_1);
-
+    card_1 ->init (card_1);
+    card_1 ->uid (card_1, &read_uid);
+    
 	/* Insert application code here, after the board has been initialized. */
 }

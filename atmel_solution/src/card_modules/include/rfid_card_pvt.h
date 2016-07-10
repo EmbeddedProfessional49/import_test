@@ -11,17 +11,18 @@ typedef struct rfid_module RFID_MODULE;
 typedef struct cmd_handling CMD_HANDLING;
 
 typedef RFID_STATUS (*GET_CMD) (void *user_buffer);
-typedef void (*PUT_CMD) (void *cmd);
+typedef void (*PUT_CMD) (RFID_MODULE *module, void *cmd);
 typedef void (*CLEAR_CMD) (void);
 typedef RFID_STATUS (*VERIFY_CMD) (void *cmd);
 typedef RFID_STATUS (*SEND_CMD) (void *cmd);
+typedef void (*REGISTER_CALLBACKS) (void );
 
 
 union rfid_module_cfg {
     struct {
+        void *module;
         u32 baudrate;
-        u8 module;
-        u8 uartnumber;
+        REGISTER_CALLBACKS register_callback;
     }uart_cfg;
 };
 

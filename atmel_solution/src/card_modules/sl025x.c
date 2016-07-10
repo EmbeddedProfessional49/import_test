@@ -2,11 +2,12 @@
 #include <sl025x.h>
 #include <string.h>
 #include <timer_utilities.h>
+#include <usart.h>
+#include <usart_interrupt.h>
 
 
 /*pointer to current operating module*/
 static RFID_MODULE *pthis;
-static SL025X_RCV_CMD Card1_rcv_buffer [MAX_RCV_CMD];
 
 
 static RFID_STATUS sl025x_init (void);
@@ -17,16 +18,20 @@ static RFID_STATUS sl025x_write_data (RFID_WRITE_DATA *write_data);
 static u8 xor_checksum (u8 *command_packet);
 static RFID_STATUS verify_rcv_cmd (void *cmd);
 static RFID_STATUS get_received_cmd (void *user_buff);
-static void put_received_cmd (void *cmd);
+static void put_received_cmd (RFID_MODULE *module, void *cmd);
 static void clear_received_cmd (void);
 static RFID_STATUS send_cmd (void *cmd);
 
 
+static void register_Card1_callback (void);
+static struct usart_module Card1_usart;
+static SL025X_RCV_CMD Card1_rcv_buffer [MAX_RCV_CMD];
 static RFID_MODULE Card_1 = {
     .hal_cfg.uart_cfg = {
-        .uartnumber = 1,
-        .baudrate = 1152000,
-    },
+        .module = &Card1_usart,
+        .baudrate = 9600,
+        .register_callback = register_Card1_callback,
+    },        
     .cmd =  {
         .put = put_received_cmd,
         .get = get_received_cmd,
@@ -38,10 +43,35 @@ static RFID_MODULE Card_1 = {
         .init = sl025x_init,
         .uid = sl025x_uid,
         .read = sl025x_read_data,
+        .write = sl025x_write_data,
         .pthis = &Card_1,
         .current_module = &pthis,
     }
 };
+
+static void Card1_read_callback (struct usart_module *const usart_module) {
+#define READ_BUFFER_SIZE 50 
+    u8 buffer_read [READ_BUFFER_SIZE];
+    u8 byte_count = 0x00;
+    
+    usart_write_buffer_job (Card_1.hal_cfg.uart_cfg.module, buffer_read, READ_BUFFER_SIZE);
+    
+    for (byte_count = 0x00; byte_count < READ_BUFFER_SIZE; byte_count ++)
+    {
+        if (buffer_read [byte_count] == RECV_PREAMBLE)
+        {   
+            if (READ_BUFFER_SIZE <= (byte_count + buffer_read [byte_count + 2])) {
+                Card_1.cmd.put (&Card_1, &buffer_read [byte_count]);
+            }
+            break;
+        }
+    }
+}
+
+static void register_Card1_callback (void) {
+    usart_register_callback (pthis ->hal_cfg.uart_cfg.module, Card1_read_callback, USART_CALLBACK_BUFFER_RECEIVED);
+    usart_enable_callback(pthis ->hal_cfg.uart_cfg.module, USART_CALLBACK_BUFFER_RECEIVED);
+}
 
 RFID_MODULE_OPS* Get_Sl025x_Ops (void) {
 
@@ -51,8 +81,22 @@ RFID_MODULE_OPS* Get_Sl025x_Ops (void) {
 static RFID_STATUS sl025x_init (void) {
 
     // module init code
-
-    return 0;
+    struct usart_config config_usart;
+    usart_get_config_defaults(&config_usart);
+    config_usart.baudrate    = pthis ->hal_cfg.uart_cfg.baudrate;
+/*    config_usart.mux_setting = EDBG_CDC_SERCOM_MUX_SETTING;
+    config_usart.pinmux_pad0 = EDBG_CDC_SERCOM_PINMUX_PAD0;
+    config_usart.pinmux_pad1 = EDBG_CDC_SERCOM_PINMUX_PAD1;
+    config_usart.pinmux_pad2 = EDBG_CDC_SERCOM_PINMUX_PAD2;
+    config_usart.pinmux_pad3 = EDBG_CDC_SERCOM_PINMUX_PAD3;
+    while (usart_init (pthis ->hal_cfg, EDBG_CDC_MODULE, &config_usart) != STATUS_OK) {
+    }*/
+    usart_enable(pthis ->hal_cfg.uart_cfg.module);
+    
+    /* Callback functions register*/
+    pthis ->hal_cfg.uart_cfg.register_callback();
+    
+    return RFID_OPERATION_SUCCEED;
 }
 
 static RFID_STATUS verify_rcv_cmd (void *cmd) {
@@ -95,18 +139,18 @@ static RFID_STATUS get_received_cmd (void *user_buff) {
     }
 }
 
-static void put_received_cmd (void *cmd) {
+static void put_received_cmd (RFID_MODULE *module, void *cmd) {
     
-    memcpy (&pthis ->cmd.buffer [pthis ->cmd.put_pointer], cmd, sizeof (SL025X_RCV_CMD));
+    memcpy (&module ->cmd.buffer [module ->cmd.put_pointer], cmd, sizeof (SL025X_RCV_CMD));
     
-    pthis ->cmd.put_pointer ++;
-    if (pthis ->cmd.put_pointer >= MAX_RCV_CMD) {
-        pthis ->cmd.put_pointer = 0x00;
+    module ->cmd.put_pointer ++;
+    if (module ->cmd.put_pointer >= MAX_RCV_CMD) {
+        module ->cmd.put_pointer = 0x00;
     }
-    if (pthis ->cmd.put_pointer == pthis ->cmd.get_pointer){
-        pthis ->cmd.get_pointer ++;
-        if (pthis ->cmd.get_pointer >= MAX_RCV_CMD) {
-            pthis ->cmd.get_pointer = 0x00;
+    if (module ->cmd.put_pointer == module ->cmd.get_pointer){
+        module ->cmd.get_pointer ++;
+        if (module ->cmd.get_pointer >= MAX_RCV_CMD) {
+            module ->cmd.get_pointer = 0x00;
         }
     }
 }
@@ -119,11 +163,16 @@ static void clear_received_cmd (void) {
 }
 
 static RFID_STATUS send_cmd (void *cmd) {
+
+    SL025X_SEND_CMD *send_cmd = cmd;
     
     // using command len we send data to hal
+    if (usart_write_buffer_wait (pthis ->hal_cfg.uart_cfg.module, (u8 *) send_cmd, ((send_cmd ->select_mifare_card.len) + 2)) != STATUS_OK) {
+        return RFID_TX_HAL_ERROR;   
+    }
     
     return RFID_OPERATION_SUCCEED;
-}    
+}
 
 static u8 xor_checksum (u8 *command_packet) {
     

@@ -34,7 +34,7 @@ typedef RFID_STATUS (*RFID_READ) (RFID_READ_DATA *read_data);
 typedef RFID_STATUS (*RFID_WRITE) (RFID_WRITE_DATA *write_data);
 
 typedef RFID_STATUS (*VIRTUAL_INIT) (RFID_MODULE_API *pthis);
-
+typedef RFID_STATUS (*VIRTUAL_UID) (RFID_MODULE_API *pthis, RFID_UID_DATA *uid_data);
 
 struct rfid_module_ops {
     RFID_INIT init;
@@ -49,13 +49,13 @@ struct rfid_module_ops {
 
 struct rfid_module_api {
     VIRTUAL_INIT init;
+    VIRTUAL_UID uid;
     RFID_MODULE_OPS *module_ops;
 };
 
 struct rfid_data {
     u8 *data;
     u8 block_number;
-    u8 number_of_blocks;
     u8 data_size;
 };
 
@@ -85,7 +85,8 @@ enum rfid_status {
     RFID_UNEXPECTED_CMD_ERROR,
     RFID_CMD_NOT_RCVED,
     RFID_VALID_CMD_FORMAT,
-    
+    RFID_TX_HAL_ERROR,
+    RFID_RX_HAL_ERROR,
 };
 
 
