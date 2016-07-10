@@ -12,6 +12,7 @@ static SL025X_RCV_CMD Card1_rcv_buffer [MAX_RCV_CMD];
 static RFID_STATUS sl025x_init (void);
 static RFID_STATUS sl025x_uid (RFID_UID_DATA *uid_data);
 static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data);
+static RFID_STATUS sl025x_write_data (RFID_WRITE_DATA *write_data);
 
 static u8 xor_checksum (u8 *command_packet);
 static RFID_STATUS verify_rcv_cmd (void *cmd);
@@ -274,8 +275,63 @@ static RFID_STATUS sl025x_read_data (RFID_READ_DATA *read_data) {
         return rcv_cmd ->read_data_block.status;
     }
     
-    memcpy (read_data ->data, rcv_cmd ->read_data_block.data, sizeof (rcv_cmd ->read_data_block.data));
+    memcpy (read_data ->data, rcv_cmd ->read_data_block.data, MAX_CMD_DATA_LEN);
     
     return ret_value;
 }
 
+static RFID_STATUS sl025x_write_data (RFID_WRITE_DATA *write_data) {
+    RFID_STATUS ret_value = RFID_OPERATION_SUCCEED;
+    SL025X_RCV_CMD *rcv_cmd = NULL;
+    SL025X_SEND_CMD cmd = {{0}};;
+    LOGIN_SECTOR_DETAILS login_sector = {0};
+    u8 key [] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    u8 sector_no = 0x00;
+    
+    cmd.write_data_block.preamble = SEND_PREAMBLE;
+    cmd.write_data_block.len = 0x13;
+    cmd.write_data_block.cmd = WRITE_DATA_BLOCK;
+    cmd.write_data_block.block = write_data ->block_number;
+    cmd.write_data_block.data = (u8 (*) [MAX_CMD_DATA_LEN]) write_data ->data;
+    cmd.write_data_block.chksum = xor_checksum ((u8 *) &cmd.write_data_block);
+    
+    if(write_data ->block_number < 0x80) {
+        sector_no = (write_data ->block_number / 0x04);
+    }
+    else if (sector_no >= 0x80) {
+        sector_no = (write_data ->block_number / 0x10);
+        sector_no = sector_no + 0x18;
+    }
+    
+    login_sector.key = key;
+    login_sector.key_type = 0xAA;
+    login_sector.sector = sector_no;
+    
+    ret_value = sl025x_login_to_sector (&login_sector);
+    
+    if (ret_value != RFID_LOGIN_SUCCEED) {
+        return ret_value;
+    }
+    
+    clear_received_cmd ();
+    
+    ret_value = pthis ->cmd.send (&cmd);
+    
+    // delay
+    time_delay_ms (5);
+    
+    // get response from card module
+    ret_value = pthis ->cmd.get (rcv_cmd);
+    if (ret_value != RFID_VALID_CMD_FORMAT) {
+        return ret_value;
+    }
+    
+    if (rcv_cmd ->write_data_block.cmd != READ_DATA_BLOCK) {
+        return RFID_UNEXPECTED_CMD_ERROR;
+    }
+    if (rcv_cmd ->write_data_block.status != RFID_OPERATION_SUCCEED) {
+        return rcv_cmd ->write_data_block.status;
+    }
+       
+    return ret_value;
+}

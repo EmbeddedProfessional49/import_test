@@ -7,6 +7,7 @@
 #define SEND_PREAMBLE 0xBA
 #define RECV_PREAMBLE 0xBD
 #define MAX_RCV_CMD 0x05
+#define MAX_CMD_DATA_LEN 16
 
 
 typedef enum sl025x_cmd SL025X_CMD;
@@ -80,7 +81,7 @@ union sl025X_send_cmd {
         u8 len;
         SL025X_CMD cmd;
         u8 block;
-        u8 data[16];
+        u8 (*data) [MAX_CMD_DATA_LEN];
         u8 chksum;
     }write_data_block;        
     
@@ -177,7 +178,7 @@ union sl025X_rcv_cmd {
         u8 len;
         SL025X_CMD cmd;
         u8 status;
-        u8 data[16];
+        u8 (*data) [MAX_CMD_DATA_LEN];
         u8 chksum;
     }read_data_block, write_data_block, read_data_page;
             

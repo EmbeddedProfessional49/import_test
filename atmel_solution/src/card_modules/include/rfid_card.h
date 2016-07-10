@@ -21,8 +21,8 @@
 typedef struct rfid_module RFID_MODULE;
 typedef struct rfid_module_ops RFID_MODULE_OPS;
 typedef struct rfid_module_api RFID_MODULE_API;
-typedef struct rfid_read_data RFID_READ_DATA;
-typedef struct rfid_write_data RFID_WRITE_DATA;
+typedef struct rfid_data RFID_READ_DATA;
+typedef struct rfid_data RFID_WRITE_DATA;
 typedef enum rfid_status RFID_STATUS;
 typedef struct rfid_uid_data RFID_UID_DATA;
 
@@ -52,14 +52,7 @@ struct rfid_module_api {
     RFID_MODULE_OPS *module_ops;
 };
 
-struct rfid_read_data {
-    u8 *data;
-    u8 block_number;
-    u8 number_of_blocks;
-    u8 data_size;
-};
-
-struct rfid_write_data {
+struct rfid_data {
     u8 *data;
     u8 block_number;
     u8 number_of_blocks;
