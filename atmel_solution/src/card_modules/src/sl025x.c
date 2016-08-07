@@ -80,18 +80,30 @@ RFID_MODULE_OPS* Get_Sl025x_Ops (void) {
 
 static RFID_STATUS sl025x_init (void) {
 
-    // module init code
+    //! [setup_config]
     struct usart_config config_usart;
+    //! [setup_config]
+    //! [setup_config_defaults]
     usart_get_config_defaults(&config_usart);
+    //! [setup_config_defaults]
+
+    //! [setup_change_config]
     config_usart.baudrate    = pthis ->hal_cfg.uart_cfg.baudrate;
 /*    config_usart.mux_setting = EDBG_CDC_SERCOM_MUX_SETTING;
     config_usart.pinmux_pad0 = EDBG_CDC_SERCOM_PINMUX_PAD0;
     config_usart.pinmux_pad1 = EDBG_CDC_SERCOM_PINMUX_PAD1;
     config_usart.pinmux_pad2 = EDBG_CDC_SERCOM_PINMUX_PAD2;
-    config_usart.pinmux_pad3 = EDBG_CDC_SERCOM_PINMUX_PAD3;
-    while (usart_init (pthis ->hal_cfg, EDBG_CDC_MODULE, &config_usart) != STATUS_OK) {
-    }*/
+    config_usart.pinmux_pad3 = EDBG_CDC_SERCOM_PINMUX_PAD3;*/
+    //! [setup_change_config]
+
+    //! [setup_set_config]
+//    while (usart_init(pthis ->hal_cfg.uart_cfg.module, EDBG_CDC_MODULE, &config_usart) != STATUS_OK) {
+//    }
+    //! [setup_set_config]
+
+    //! [setup_enable]
     usart_enable(pthis ->hal_cfg.uart_cfg.module);
+    //! [setup_enable]
     
     /* Callback functions register*/
     pthis ->hal_cfg.uart_cfg.register_callback();

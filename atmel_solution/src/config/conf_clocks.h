@@ -1,9 +1,9 @@
 /**
  * \file
  *
- * \brief SAM D20 Clock configuration
+ * \brief SAM D21 Clock configuration
  *
- * Copyright (C) 2012-2015 Atmel Corporation. All rights reserved.
+ * Copyright (C) 2013-2015 Atmel Corporation. All rights reserved.
  *
  * \asf_license_start
  *
@@ -106,6 +106,26 @@
 #  define CONF_CLOCK_DFLL_MAX_COARSE_STEP_SIZE    (0x1f / 4)
 #  define CONF_CLOCK_DFLL_MAX_FINE_STEP_SIZE      (0xff / 4)
 
+/* SYSTEM_CLOCK_SOURCE_DPLL configuration - Digital Phase-Locked Loop */
+#  define CONF_CLOCK_DPLL_ENABLE                  false
+#  define CONF_CLOCK_DPLL_ON_DEMAND               true
+#  define CONF_CLOCK_DPLL_RUN_IN_STANDBY          false
+#  define CONF_CLOCK_DPLL_LOCK_BYPASS             false
+#  define CONF_CLOCK_DPLL_WAKE_UP_FAST            false
+#  define CONF_CLOCK_DPLL_LOW_POWER_ENABLE        false
+
+#  define CONF_CLOCK_DPLL_LOCK_TIME               SYSTEM_CLOCK_SOURCE_DPLL_LOCK_TIME_DEFAULT
+#  define CONF_CLOCK_DPLL_REFERENCE_CLOCK         SYSTEM_CLOCK_SOURCE_DPLL_REFERENCE_CLOCK_XOSC32K
+#  define CONF_CLOCK_DPLL_FILTER                  SYSTEM_CLOCK_SOURCE_DPLL_FILTER_DEFAULT
+
+#  define CONF_CLOCK_DPLL_REFERENCE_FREQUENCY     32768
+#  define CONF_CLOCK_DPLL_REFERENCE_DIVIDER       1
+#  define CONF_CLOCK_DPLL_OUTPUT_FREQUENCY        48000000
+
+/* DPLL GCLK reference configuration */
+#  define CONF_CLOCK_DPLL_REFERENCE_GCLK_GENERATOR  GCLK_GENERATOR_1
+/* DPLL GCLK lock timer configuration */
+#  define CONF_CLOCK_DPLL_LOCK_GCLK_GENERATOR     GCLK_GENERATOR_1
 
 /* Set this to true to configure the GCLK when running clocks_init. If set to
  * false, none of the GCLK generators will be configured in clocks_init(). */
@@ -166,6 +186,13 @@
 #  define CONF_CLOCK_GCLK_7_CLOCK_SOURCE          SYSTEM_CLOCK_SOURCE_OSC8M
 #  define CONF_CLOCK_GCLK_7_PRESCALER             1
 #  define CONF_CLOCK_GCLK_7_OUTPUT_ENABLE         false
+
+/* Configure GCLK generator 8 */
+#  define CONF_CLOCK_GCLK_8_ENABLE                false
+#  define CONF_CLOCK_GCLK_8_RUN_IN_STANDBY        false
+#  define CONF_CLOCK_GCLK_8_CLOCK_SOURCE          SYSTEM_CLOCK_SOURCE_OSC8M
+#  define CONF_CLOCK_GCLK_8_PRESCALER             1
+#  define CONF_CLOCK_GCLK_8_OUTPUT_ENABLE         false
 
 #endif /* CONF_CLOCKS_H_INCLUDED */
 
